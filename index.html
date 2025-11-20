@@ -1,13 +1,95 @@
 <!DOCTYPE html>
-<html lang="">
-  <head>
+<html lang="pt-BR">
+<head>
     <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vite App</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+    <title>Curvas Paramétricas - Computação Gráfica</title>
+    <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Visualizador de Curvas Paramétricas</h1>
+        </header>
+
+        <!-- Navegação por Abas -->
+        <div class="tabs">
+            <button class="tab-button active" onclick="app.switchTab('bezier')">Curva de Bézier</button>
+            <button class="tab-button" onclick="app.switchTab('spline')">B-Spline Cúbica</button>
+        </div>
+
+        <!-- Conteúdo das Abas -->
+        <div id="bezier-tab" class="tab-content active">
+            <div class="controls-panel">
+                <h3>Controles de Bézier</h3>
+                <div class="control-group">
+                    <label>Grau da Curva:</label>
+                    <span id="bezier-degree">0</span>
+                </div>
+                <div class="control-group">
+                    <label>Ponto Selecionado:</label>
+                    <div class="point-controls">
+                        <input type="number" id="point-x" placeholder="X" disabled>
+                        <input type="number" id="point-y" placeholder="Y" disabled>
+                        <label>Peso:</label>
+                        <input type="range" id="weight-slider" min="0.1" max="3" step="0.1" value="1" disabled>
+                        <input type="number" id="weight-value" step="0.1" value="1" disabled>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <button onclick="app.clearPoints()">Limpar Pontos</button>
+                    <button onclick="app.exportData()">Exportar JSON</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="spline-tab" class="tab-content">
+            <div class="controls-panel">
+                <h3>Controles de B-Spline</h3>
+                <div class="control-group">
+                    <label>Grau da Curva:</label>
+                    <select id="spline-degree">
+                        <option value="3" selected>3 (Cúbica)</option>
+                        <option value="2">2 (Quadrática)</option>
+                        <option value="4">4 (Quártica)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Passo de Interpolação:</label>
+                    <input type="range" id="spline-step" min="0.001" max="0.1" step="0.001" value="0.01">
+                    <span id="spline-step-value">0.01</span>
+                </div>
+                <div class="control-group">
+                    <button onclick="app.copyFromBezier()">Copiar Pontos de Bézier</button>
+                    <button onclick="app.clearPoints()">Limpar Pontos</button>
+                    <button onclick="app.exportData()">Exportar JSON</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Principal -->
+        <div class="canvas-container">
+            <canvas id="canvas" width="800" height="600"></canvas>
+            <div class="canvas-info">
+                <p>Clique para adicionar pontos | Arraste para mover | Duplo clique para remover</p>
+                <p id="mouse-coords">Mouse: (0, 0)</p>
+            </div>
+        </div>
+
+        <!-- Lista de Pontos -->
+        <div class="points-list">
+            <h3>Pontos de Controle</h3>
+            <div id="points-container">
+                <!-- Os pontos serão inseridos aqui dinamicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="src/math.js"></script>
+    <script src="src/renderer.js"></script>
+    <script src="src/data.js"></script>
+    <script src="src/ui.js"></script>
+    <script src="src/app.js"></script>
+</body>
 </html>

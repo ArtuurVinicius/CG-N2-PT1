@@ -18,6 +18,8 @@ const UI = {
     onPointRemove: null,
     onPointSelect: null,
     onMouseMove: null,
+    onFindPointAt: null,
+    onSplineParameterChange: null,
 
     /**
      * Inicializa o sistema de UI
@@ -31,6 +33,8 @@ const UI = {
         this.onPointRemove = callbacks.onPointRemove || (() => {});
         this.onPointSelect = callbacks.onPointSelect || (() => {});
         this.onMouseMove = callbacks.onMouseMove || (() => {});
+        this.onFindPointAt = callbacks.onFindPointAt || null;
+        this.onSplineParameterChange = callbacks.onSplineParameterChange || (() => {});
 
         this.setupEventListeners();
         this.setupControlListeners();
@@ -103,8 +107,11 @@ const UI = {
         if (splineStep && splineStepValue) {
             splineStep.addEventListener('input', (e) => {
                 const value = parseFloat(e.target.value);
+                if (Number.isNaN(value)) {
+                    return;
+                }
                 splineStepValue.textContent = value.toFixed(3);
-                this.onSplineParameterChange && this.onSplineParameterChange();
+                this.onSplineParameterChange({ step: value });
             });
         }
 
@@ -112,7 +119,10 @@ const UI = {
         const splineDegree = document.getElementById('spline-degree');
         if (splineDegree) {
             splineDegree.addEventListener('change', (e) => {
-                this.onSplineParameterChange && this.onSplineParameterChange();
+                const value = parseInt(e.target.value, 10);
+                if (!Number.isNaN(value)) {
+                    this.onSplineParameterChange({ degree: value });
+                }
             });
         }
     },
@@ -237,7 +247,7 @@ const UI = {
                 break;
                 
             case 'ArrowDown':
-                this.moveSelectedPoint(0, 1);
+                                this.moveSelectedPoint(0, 1);
                 e.preventDefault();
                 break;
                 
@@ -388,6 +398,7 @@ const UI = {
         container.innerHTML = '';
 
         controlPoints.forEach((point, index) => {
+            const displayIndex = index + 1; // Ajusta exibição para começar em 1
             const pointElement = document.createElement('div');
             pointElement.className = 'point-item';
             if (index === this.selectedPointIndex) {
@@ -395,7 +406,7 @@ const UI = {
             }
 
             pointElement.innerHTML = `
-                <h4>Ponto ${index}</h4>
+                <h4>Ponto ${displayIndex}</h4>
                 <p>X: ${Math.round(point.x)}</p>
                 <p>Y: ${Math.round(point.y)}</p>
                 <p>Peso: ${point.weight ? point.weight.toFixed(2) : '1.00'}</p>
@@ -437,8 +448,32 @@ const UI = {
         if (type === 'bezier') {
             const degreeElement = document.getElementById('bezier-degree');
             if (degreeElement) {
-                degreeElement.textContent = degree;
+                const displayDegree = Math.max(1, degree + 1);
+                degreeElement.textContent = displayDegree;
             }
+        }
+    },
+
+    /**
+     * Mantém os controles de spline sincronizados com as configurações atuais
+     * @param {Object} settings - Configurações de spline
+     */
+    updateSplineControls(settings) {
+        if (!settings) return;
+
+        const degreeSelect = document.getElementById('spline-degree');
+        if (degreeSelect && typeof settings.splineDegree === 'number') {
+            degreeSelect.value = settings.splineDegree.toString();
+        }
+
+        const stepSlider = document.getElementById('spline-step');
+        if (stepSlider && typeof settings.splineStep === 'number') {
+            stepSlider.value = settings.splineStep.toString();
+        }
+
+        const stepValue = document.getElementById('spline-step-value');
+        if (stepValue && typeof settings.splineStep === 'number') {
+            stepValue.textContent = settings.splineStep.toFixed(3);
         }
     },
 

@@ -76,6 +76,7 @@ const Renderer = {
     drawControlPoint(point, index, isSelected = false, isHovered = false) {
         const radius = 6;
         const weight = point.weight || 1;
+        const displayIndex = index + 1; // Mostra numeração iniciando em 1
         
         this.ctx.save();
 
@@ -117,7 +118,7 @@ const Renderer = {
         this.ctx.font = 'bold 10px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(index.toString(), point.x, point.y);
+        this.ctx.fillText(displayIndex.toString(), point.x, point.y);
 
         // Label com coordenadas
         const labelX = point.x + 15;
@@ -126,7 +127,7 @@ const Renderer = {
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         this.ctx.font = '11px Arial';
         this.ctx.textAlign = 'left';
-        this.ctx.fillText(`P${index} (${Math.round(point.x)}, ${Math.round(point.y)})`, labelX, labelY);
+        this.ctx.fillText(`P${displayIndex} (${Math.round(point.x)}, ${Math.round(point.y)})`, labelX, labelY);
         
         if (weight !== 1) {
             this.ctx.fillText(`w: ${weight.toFixed(1)}`, labelX, labelY + 12);

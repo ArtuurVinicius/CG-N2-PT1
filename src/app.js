@@ -35,13 +35,13 @@ const App = {
                 onPointRemove: (index) => this.removePoint(index),
                 onPointSelect: (index) => this.selectPoint(index),
                 onMouseMove: (coords) => this.handleMouseMove(coords),
-                onFindPointAt: (coords) => this.findPointAt(coords)
+                onFindPointAt: (coords) => this.findPointAt(coords),
+                onSplineParameterChange: (params) => this.handleSplineParameterChange(params)
             });
 
             // Configura callbacks adicionais para UI
             UI.onPointWeightChange = (index, weight) => this.updatePointWeight(index, weight);
             UI.onPointCoordinateChange = (index, x, y) => this.updatePointCoordinates(index, x, y);
-            UI.onSplineParameterChange = () => this.updateCurve();
 
             // Configura callback para mudanças de dados
             DataManager.onDataChanged = () => this.refresh();
@@ -132,9 +132,12 @@ const App = {
     selectPoint(index) {
         const points = DataManager.getControlPoints();
         if (index >= 0 && index < points.length) {
-            UI.selectPoint(index);
+            UI.setSelectedPoint(index);
             UI.loadPointData(points[index]);
+        } else {
+            UI.setSelectedPoint(-1);
         }
+        UI.updatePointsList(points);
         this.render();
     },
 
@@ -190,6 +193,47 @@ const App = {
     },
 
     /**
+     * Manipula alterações nos controles de spline
+     * @param {Object} params - Parâmetros atualizados
+     */
+    handleSplineParameterChange(params = {}) {
+        const settings = DataManager.getSettings();
+        let shouldRefresh = false;
+
+        const hasDegree = Object.prototype.hasOwnProperty.call(params, 'degree');
+        const hasStep = Object.prototype.hasOwnProperty.call(params, 'step');
+
+        if (hasDegree) {
+            const rawDegree = params.degree;
+            if (typeof rawDegree === 'number' && !Number.isNaN(rawDegree)) {
+                const normalizedDegree = Math.max(1, Math.floor(rawDegree));
+                if (settings.splineDegree !== normalizedDegree) {
+                    DataManager.updateSetting('splineDegree', normalizedDegree);
+                }
+                shouldRefresh = true;
+            }
+        }
+
+        if (hasStep) {
+            const rawStep = params.step;
+            if (typeof rawStep === 'number' && !Number.isNaN(rawStep)) {
+                const clampedStep = Math.max(0.001, Math.min(0.1, rawStep));
+                if (settings.splineStep !== clampedStep) {
+                    DataManager.updateSetting('splineStep', clampedStep);
+                    DataManager.updateSetting('splineSteps', Math.max(2, Math.ceil(1 / clampedStep)));
+                }
+                shouldRefresh = true;
+            }
+        }
+
+        if (shouldRefresh) {
+            this.updateCurve();
+            this.updateUI();
+            this.render();
+        }
+    },
+
+    /**
      * Atualiza a curva atual
      */
     updateCurve() {
@@ -206,11 +250,15 @@ const App = {
             if (currentTab === 'bezier') {
                 this.currentCurve = CurveMath.generateBezierCurve(points, settings.bezierSteps);
             } else {
-                const degree = parseInt(document.getElementById('spline-degree')?.value || settings.splineDegree);
-                const step = parseFloat(document.getElementById('spline-step')?.value || settings.splineStep);
-                const steps = Math.ceil(1 / step);
-                
-                this.currentCurve = CurveMath.generateBSplineCurve(points, degree, steps);
+                const desiredDegree = Math.max(1, Math.floor(settings.splineDegree || 1));
+                const maxDegree = Math.max(1, points.length - 1);
+                const effectiveDegree = Math.min(desiredDegree, maxDegree);
+
+                const rawStep = typeof settings.splineStep === 'number' ? settings.splineStep : 0.01;
+                const clampedStep = Math.max(0.001, Math.min(0.1, rawStep));
+                const steps = Math.max(2, Math.ceil(1 / clampedStep));
+
+                this.currentCurve = CurveMath.generateBSplineCurve(points, effectiveDegree, steps);
             }
         } catch (error) {
             console.error('Erro ao gerar curva:', error);
@@ -225,12 +273,14 @@ const App = {
         const currentTab = DataManager.getCurrentTab();
         const points = DataManager.getControlPoints();
         const statistics = DataManager.getCurveStatistics();
+        const settings = DataManager.getSettings();
 
         // Atualiza lista de pontos
         UI.updatePointsList(points);
 
         // Atualiza informações da curva
         UI.updateCurveInfo(statistics.degree, currentTab);
+        UI.updateSplineControls(settings);
 
         // Atualiza validação
         const validation = DataManager.validateCurrentCurve();

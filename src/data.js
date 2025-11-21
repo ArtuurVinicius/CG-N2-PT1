@@ -409,10 +409,15 @@ const DataManager = {
 
         const boundingBox = CurveMath.getBoundingBox(points);
         const totalWeight = points.reduce((sum, p) => sum + p.weight, 0);
+        const availableDegree = Math.max(0, points.length - 1);
+        const desiredDegree = typeof this.state.settings.splineDegree === 'number'
+            ? this.state.settings.splineDegree
+            : 1;
+        const splineDegree = Math.min(desiredDegree, availableDegree);
         
         return {
             pointCount: points.length,
-            degree: type === 'bezier' ? points.length - 1 : this.state.settings.splineDegree,
+            degree: type === 'bezier' ? availableDegree : splineDegree,
             boundingBox,
             totalWeight,
             averageWeight: totalWeight / points.length
